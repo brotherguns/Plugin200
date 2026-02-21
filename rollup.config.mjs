@@ -11,7 +11,6 @@ export default {
     plugins: [
         nodeResolve(),
         swc({
-            env: { targets: "defaults" },
             jsc: {
                 parser: { syntax: "ecmascript" },
                 target: "es2022"
