@@ -1,10 +1,10 @@
 // Auto Cache Clear Plugin
 // Hooks into Discord's Flux Dispatcher to clear the cache upon account swap or logout.
 
-import { fluxDispatcher } from "@vendetta/metro/common";
-import { NativeModules } from "react-native";
+// Pull Discord's native modules directly from Vendetta's global object
+const { fluxDispatcher } = window.vendetta.metro.common;
+const { NativeModules } = window.vendetta.metro.common.ReactNative;
 
-// Pull Discord's native iOS modules from the React Native bridge
 const { DCDFileManager, BundleUpdaterManager } = NativeModules;
 
 function handleAccountSwap() {
@@ -27,22 +27,19 @@ function handleAccountSwap() {
     }
 }
 
-export default {
-    onLoad: () => {
-        console.log("[AutoCacheClear] Plugin loaded. Listening for MULTI_ACCOUNT_VALIDATE_TOKEN.");
+// Vendetta expects a default export with onLoad and onUnload
+module.exports = {
+    default: {
+        onLoad: () => {
+            console.log("[AutoCacheClear] Plugin loaded. Listening for account swaps.");
+            fluxDispatcher.subscribe("MULTI_ACCOUNT_VALIDATE_TOKEN", handleAccountSwap);
+            fluxDispatcher.subscribe("LOGOUT", handleAccountSwap);
+        },
         
-        // Fired the moment you select a new account in the switcher
-        fluxDispatcher.subscribe("MULTI_ACCOUNT_VALIDATE_TOKEN", handleAccountSwap);
-        
-        // Fired on a standard logout, just to be safe
-        fluxDispatcher.subscribe("LOGOUT", handleAccountSwap);
-    },
-    
-    onUnload: () => {
-        console.log("[AutoCacheClear] Plugin unloaded.");
-        
-        // Clean up listeners to prevent memory leaks
-        fluxDispatcher.unsubscribe("MULTI_ACCOUNT_VALIDATE_TOKEN", handleAccountSwap);
-        fluxDispatcher.unsubscribe("LOGOUT", handleAccountSwap);
+        onUnload: () => {
+            console.log("[AutoCacheClear] Plugin unloaded.");
+            fluxDispatcher.unsubscribe("MULTI_ACCOUNT_VALIDATE_TOKEN", handleAccountSwap);
+            fluxDispatcher.unsubscribe("LOGOUT", handleAccountSwap);
+        }
     }
 };
